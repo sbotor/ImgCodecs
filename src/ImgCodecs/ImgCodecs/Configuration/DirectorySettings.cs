@@ -6,4 +6,13 @@ public class DirectorySettings
     public string ImageListPath { get; set; } = "./images.csv";
     public string TempDirectoryPath { get; set; } = "./temp";
     public string ResultsPath { get; set; } = "./results.csv";
+    public TempCleanupBehavior TempCleanupBehavior { get; set; }
+}
+
+public enum TempCleanupBehavior
+{
+    DeleteAll = default,
+    PreserveEncoded,
+    PreserveDecoded,
+    PreserveAll
 }

@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using ImgCodecs.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace ImgCodecs;
@@ -6,6 +7,9 @@ namespace ImgCodecs;
 [Verb("run", isDefault: true)]
 public class BenchmarkingOptions
 {
+    [Value(0, HelpText = "Benchmark type to run. Allowed values: JpegLs, Jpeg2000, JpegXl, Flif, Hevc, Vvc.")]
+    public BenchmarkType BenchmarkType { get; set; }
+    
     [Option('c', "count", HelpText = "Run count per image. Default: 1.")]
     public int RunCount { get; set; } = 1;
     
@@ -18,23 +22,26 @@ public class BenchmarkingOptions
     [Option('t', "timeout", HelpText = "Timeout per one image run in milliseconds. Default: 1000.")]
     public int Timeout { get; set; } = 1000;
 
-    [Option('l', "list", HelpText = "Path to the image list CSV file. Default: './images.csv'.")]
+    [Option('l', "list", HelpText = "Path to the image list CSV file. Default: '{root}/images.csv'.")]
     public string? ListPath { get; set; }
 
-    [Option('i', "images", HelpText = "Path to the directory containing the images. Default: './images/'.")]
+    [Option('i', "images", HelpText = "Path to the directory containing the images. Default: '{root}/images/'.")]
     public string? ImageDirectoryPath { get; set; }
     
-    [Option("temp", HelpText = "Path to the temp directory used for processing. Default: './temp/'.")]
+    [Option("temp", HelpText = "Path to the temp directory used for processing. Default: '{root}/temp/'.")]
     public string? TempDirectoryPath { get; set; }
 
-    [Option('r', "results", HelpText = "Path to the results CSV file. Default: './results.csv'.")]
+    [Option('o', "output", HelpText = "Path to the results CSV file. Default: '{root}/results.csv'.")]
     public string? ResultsPath { get; set; }
 
-    [Option('h', "home", HelpText = "Path used as home for all default paths. Default to current directory.")]
+    [Option('r', "root", HelpText = "Path used as root for all other paths. Default to current directory.")]
     public string HomePath { get; set; } = ".";
 
     [Option("log-level", HelpText = "Minimum log level. Default: Information.")]
     public LogLevel MinimumLogLevel { get; set; } = LogLevel.Information;
+    
+    [Option("temp-cleanup", HelpText = "Temporary files cleanup behavior. Allowed values: DeleteAll, PreserveEncoded, PreserveDecoded, PreserveAll.")]
+    public TempCleanupBehavior TempCleanupBehavior { get; set; }
 
     public string GetEffectiveListPath()
         => GetEffectivePath(ListPath, "images.csv");
@@ -50,8 +57,11 @@ public class BenchmarkingOptions
     
     private string GetEffectivePath(string? value, string defaultValue)
     {
-        return string.IsNullOrEmpty(value)
-            ? Path.Join(HomePath, defaultValue)
-            : value;
+        if (string.IsNullOrEmpty(value))
+        {
+            value = defaultValue;
+        }
+        
+        return Path.Join(HomePath, value);
     }
 }

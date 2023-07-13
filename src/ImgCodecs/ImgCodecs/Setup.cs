@@ -13,17 +13,15 @@ public static class Setup
     {
         services.AddScoped<BenchmarkingPipeline>();
 
-        services.AddScoped<IImageProvider, ImageProvider>();
         services.AddScoped<IBenchmarkRunner, BenchmarkRunner>();
         services.AddScoped<IResultsSink, CsvFileResultsSink>();
+        
+        services.AddScoped<ICodecProcessProviderFactory, CodecProcessProviderFactory>();
 
-        services.AddScoped<ITempFileProvider, TempFileProvider>();
+        services.AddScoped<IImageProvider, ImageProvider>();
+        services.AddScoped<ITempDirectoryProvider, TempDirectoryProvider>();
 
         services.AddTransient<IProcessRunner, ProcessRunner>();
-
-        // TODO: Everything below has to be generalised
-        services.AddScoped<ICodecProcessFactory, ImageMagickProcessFactory>(
-            sp => new(BenchmarkType.Jpeg2000, sp.GetRequiredService<ITempFileProvider>()));
 
         return services;
     }
@@ -31,10 +29,11 @@ public static class Setup
     public static IServiceCollection Configure(this IServiceCollection services, BenchmarkingOptions options)
     {
         services.AddOptions<BenchmarkSettings>().Configure(x =>
-        { 
+        {
             x.RunCount = options.RunCount;
             x.WarmupCount = options.WarmupCount;
             x.ImageBatchSize = options.BatchSize;
+            x.BenchmarkType = options.BenchmarkType;
         });
 
         services.AddOptions<ProcessRunnerSettings>().Configure(x =>
@@ -48,6 +47,7 @@ public static class Setup
             x.ImagesDirectoryPath = options.GetEffectiveImageDirPath();
             x.TempDirectoryPath = options.GetEffectiveTempDirPath();
             x.ResultsPath = options.GetEffectiveResultsPath();
+            x.TempCleanupBehavior = options.TempCleanupBehavior;
         });
 
         return services;

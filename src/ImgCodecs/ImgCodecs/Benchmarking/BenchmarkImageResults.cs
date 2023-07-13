@@ -30,7 +30,7 @@ public record BenchmarkStats(
     double Variance)
 {
     public static readonly BenchmarkStats Empty = new(default, default);
-};
+}
 
 public record BenchmarkImageStats(
     BenchmarkStats EncodingTime,
@@ -40,6 +40,8 @@ public record BenchmarkImageStats(
     ImageEntry Image,
     int MeasurementCount)
 {
+    public double CompressionRatio { get; } = OriginalSize / EncodedSize.Mean;
+        
     public static BenchmarkImageStats Empty(ImageEntry? entry = null)
         => new(
             BenchmarkStats.Empty,

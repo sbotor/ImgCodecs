@@ -71,6 +71,8 @@ public class CsvFileResultsSink : IResultsSink
             
             Map(x => x.OriginalSize)
                 .Name("original_size");
+            Map(x => x.CompressionRatio)
+                .Name("compression_ratio");
             
             Map(x => x.EncodedSize.Mean)
                 .Name("encoded_size_mean");

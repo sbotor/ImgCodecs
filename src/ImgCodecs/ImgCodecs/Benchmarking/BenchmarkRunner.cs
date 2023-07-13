@@ -14,20 +14,20 @@ public interface IBenchmarkRunner
 public class BenchmarkRunner : IBenchmarkRunner
 {
     private readonly BenchmarkSettings _settings;
-    private readonly ICodecProcessFactory _codecProcessFactory;
+    private readonly ICodecProcessProvider _codecProcessProvider;
     private readonly IImageProvider _imageProvider;
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<BenchmarkRunner> _logger;
 
     public BenchmarkRunner(IOptions<BenchmarkSettings> options,
-        ICodecProcessFactory codecProcessFactory,
+        ICodecProcessProviderFactory codecProcessProviderFactory,
         IImageProvider imageProvider,
         IProcessRunner processRunner,
         ILogger<BenchmarkRunner> logger)
     {
         _settings = options.Value;
-        _codecProcessFactory = codecProcessFactory;
+        _codecProcessProvider = codecProcessProviderFactory.GetProvider(_settings.BenchmarkType);
         _imageProvider = imageProvider;
         _processRunner = processRunner;
         _logger = logger;
@@ -49,7 +49,7 @@ public class BenchmarkRunner : IBenchmarkRunner
         return list;
     }
 
-    public async Task<BenchmarkImageResults> RunForImageAsync(ImageEntry image)
+    private async Task<BenchmarkImageResults> RunForImageAsync(ImageEntry image)
     {
         var originalInfo = _imageProvider.GetInfoFromFilename(image.Name);
         var results = new BenchmarkImageResults(image, originalInfo.ByteCount);
@@ -59,7 +59,7 @@ public class BenchmarkRunner : IBenchmarkRunner
         for (var i = 0; i < _settings.WarmupCount; i++)
         {
             var encodedPath = await MeasureEncoding(originalInfo.FullPath);
-            await MeasureDecoding(encodedPath);
+            await MeasureDecoding(originalInfo.FullPath, encodedPath);
         }
 
         for (var i = 0; i < _settings.RunCount; i++)
@@ -68,7 +68,7 @@ public class BenchmarkRunner : IBenchmarkRunner
             var encodingTime = _processRunner.LastRunTime;
             var encodedInfo = _imageProvider.GetInfoFromPath(encodedPath);
             
-            await MeasureDecoding(encodedPath);
+            await MeasureDecoding(originalInfo.FullPath, encodedPath);
             var decodingTime = _processRunner.LastRunTime;
             
             results.Collect(new(
@@ -82,16 +82,16 @@ public class BenchmarkRunner : IBenchmarkRunner
 
     private async Task<string> MeasureEncoding(string path)
     {
-        using var process = _codecProcessFactory.CreateForEncoding(path, out var encodedPath);
+        using var process = _codecProcessProvider.CreateForEncoding(path, out var encodedPath);
 
         await _processRunner.RunTimedAsync(process);
 
         return encodedPath;
     }
 
-    private async Task MeasureDecoding(string path)
+    private async Task MeasureDecoding(string originalPath, string encodedPath)
     {
-        using var process = _codecProcessFactory.CreateForDecoding(path);
+        using var process = _codecProcessProvider.CreateForDecoding(originalPath, encodedPath);
 
         await _processRunner.RunTimedAsync(process);
     }
