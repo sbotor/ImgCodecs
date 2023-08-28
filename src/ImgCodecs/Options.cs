@@ -34,7 +34,7 @@ public class BenchmarkingOptions
     [Option('o', "output", HelpText = "Path to the results CSV file. Default: '{root}/results.csv'.")]
     public string? ResultsPath { get; set; }
 
-    [Option('r', "root", HelpText = "Path used as root for all other paths. Default to current directory.")]
+    [Option('r', "root", HelpText = "Path used as root for all other paths. Defaults to current directory.")]
     public string HomePath { get; set; } = ".";
 
     [Option("log-level", HelpText = "Minimum log level. Default: Information.")]

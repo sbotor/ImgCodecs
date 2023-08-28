@@ -11,7 +11,7 @@ public class DirectorySettings
 
 public enum TempCleanupBehavior
 {
-    DeleteAll = default,
+    DeleteAll,
     PreserveEncoded,
     PreserveDecoded,
     PreserveAll

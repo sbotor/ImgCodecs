@@ -16,7 +16,7 @@ public static class Setup
         services.AddScoped<IBenchmarkRunner, BenchmarkRunner>();
         services.AddScoped<IResultsSink, CsvFileResultsSink>();
         
-        services.AddScoped<ICodecProcessProviderFactory, CodecProcessProviderFactory>();
+        services.AddScoped<ICodecFactory, CodecFactory>();
 
         services.AddScoped<IImageProvider, ImageProvider>();
         services.AddScoped<ITempDirectoryProvider, TempDirectoryProvider>();

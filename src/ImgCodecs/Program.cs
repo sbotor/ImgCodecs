@@ -38,6 +38,10 @@ public static class Program
         catch (Exception e)
         {
             logger.LogCritical(e, "A critical error has occured.");
+
+            var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+            loggerFactory.Dispose();
+            
             return -1;
         }
     }

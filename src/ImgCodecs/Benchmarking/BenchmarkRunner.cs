@@ -14,20 +14,20 @@ public interface IBenchmarkRunner
 public class BenchmarkRunner : IBenchmarkRunner
 {
     private readonly BenchmarkSettings _settings;
-    private readonly ICodecProcessProvider _codecProcessProvider;
+    private readonly ICodec _codec;
     private readonly IImageProvider _imageProvider;
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<BenchmarkRunner> _logger;
 
     public BenchmarkRunner(IOptions<BenchmarkSettings> options,
-        ICodecProcessProviderFactory codecProcessProviderFactory,
+        ICodecFactory codecFactory,
         IImageProvider imageProvider,
         IProcessRunner processRunner,
         ILogger<BenchmarkRunner> logger)
     {
         _settings = options.Value;
-        _codecProcessProvider = codecProcessProviderFactory.GetProvider(_settings.BenchmarkType);
+        _codec = codecFactory.GetProvider(_settings.BenchmarkType);
         _imageProvider = imageProvider;
         _processRunner = processRunner;
         _logger = logger;
@@ -59,16 +59,31 @@ public class BenchmarkRunner : IBenchmarkRunner
         for (var i = 0; i < _settings.WarmupCount; i++)
         {
             var encodedPath = await MeasureEncoding(originalInfo.FullPath);
+            if (encodedPath is null)
+            {
+                continue;
+            }
+            
             await MeasureDecoding(originalInfo.FullPath, encodedPath);
         }
 
         for (var i = 0; i < _settings.RunCount; i++)
         {
             var encodedPath = await MeasureEncoding(originalInfo.FullPath);
+            if (encodedPath is null)
+            {
+                continue;
+            }
+            
             var encodingTime = _processRunner.LastRunTime;
             var encodedInfo = _imageProvider.GetInfoFromPath(encodedPath);
             
-            await MeasureDecoding(originalInfo.FullPath, encodedPath);
+            var decodedSuccessfully = await MeasureDecoding(originalInfo.FullPath, encodedPath);
+            if (!decodedSuccessfully)
+            {
+                continue;
+            }
+            
             var decodingTime = _processRunner.LastRunTime;
             
             results.Collect(new(
@@ -80,19 +95,36 @@ public class BenchmarkRunner : IBenchmarkRunner
         return results;
     }
 
-    private async Task<string> MeasureEncoding(string path)
+    private async Task<string?> MeasureEncoding(string path)
     {
-        using var process = _codecProcessProvider.CreateForEncoding(path, out var encodedPath);
+        using var encoder = _codec.CreateEncoder(path);
 
-        await _processRunner.RunTimedAsync(process);
+        await _processRunner.RunTimedAsync(encoder.Process);
 
-        return encodedPath;
+        if (encoder.Process.ExitCode == 0)
+        {
+            return encoder.EncodedPath;
+        }
+        
+        _logger.LogError("Could not encode file {path}. Exit code: {code}.",
+            path, encoder.Process.ExitCode);
+        return null;
     }
 
-    private async Task MeasureDecoding(string originalPath, string encodedPath)
+    private async Task<bool> MeasureDecoding(string originalPath, string encodedPath)
     {
-        using var process = _codecProcessProvider.CreateForDecoding(originalPath, encodedPath);
+        using var process = _codec.CreateDecoder(originalPath, encodedPath);
 
         await _processRunner.RunTimedAsync(process);
+        
+        if (process.ExitCode == 0)
+        {
+            return true;
+        }
+        
+        _logger.LogError("Could not decode file {path}. Exit code: {code}.",
+            encodedPath, process.ExitCode);
+
+        return false;
     }
 }

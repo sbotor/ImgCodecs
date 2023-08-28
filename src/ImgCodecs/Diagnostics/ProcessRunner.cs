@@ -8,7 +8,7 @@ public interface IProcessRunner
 {
     TimeSpan Timeout { get; set; }
     double LastRunTime { get; }
-    Task<double> RunTimedAsync(Process process);
+    Task RunTimedAsync(Process process);
 }
 
 public class ProcessRunner : IProcessRunner
@@ -23,7 +23,7 @@ public class ProcessRunner : IProcessRunner
         Timeout = options.Value.Timeout;
     }
     
-    public async Task<double> RunTimedAsync(Process process)
+    public async Task RunTimedAsync(Process process)
     {
         using var cts = Timeout > TimeSpan.Zero
             ? new CancellationTokenSource(Timeout)
@@ -36,7 +36,5 @@ public class ProcessRunner : IProcessRunner
 
         _stopwatch.Stop();
         LastRunTime = _stopwatch.ElapsedMilliseconds;
-
-        return LastRunTime;
     }
 }
