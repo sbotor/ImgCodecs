@@ -30,7 +30,7 @@ public class FfmpegCodec : ICodec
 
     public Process CreateDecoder(string originalFilePath, string encodedFilePath)
     {
-        var tempDecodedFilePath = _tempDirectoryProvider.SupplyPathForDecoded(originalFilePath, TargetExtension);
+        var tempDecodedFilePath = _tempDirectoryProvider.SupplyPathForDecoded(originalFilePath);
 
         return CreateCore(GetDecoderArgs(encodedFilePath, tempDecodedFilePath));
     }
@@ -82,7 +82,7 @@ public class FfmpegCodec : ICodec
         }
     }
 
-    private IEnumerable<string> GetDecoderArgs(string encodedFilePath, string tempDecodedFilePath)
+    private static IEnumerable<string> GetDecoderArgs(string encodedFilePath, string tempDecodedFilePath)
         => new[]
         {
             "-y",

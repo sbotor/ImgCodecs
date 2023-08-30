@@ -6,7 +6,6 @@ using ImgCodecs.Images;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using NSubstitute.Core;
 
 namespace ImageCodecs.Tests;
 
@@ -36,7 +35,7 @@ public class BenchmarkingPipelineIntegrationTests
         var tempDirProvider = Substitute.For<ITempDirectoryProvider>();
         tempDirProvider.SupplyPathForEncoded(Arg.Any<string>(), Arg.Any<string>())
             .Returns("test");
-        tempDirProvider.SupplyPathForDecoded(Arg.Any<string>(), Arg.Any<string>())
+        tempDirProvider.SupplyPathForDecoded(Arg.Any<string>())
             .Returns("test");
 
         var codecFactory = new CodecFactory(tempDirProvider);

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using ImgCodecs.Configuration;
 using ImgCodecs.Images;
 
@@ -6,7 +7,23 @@ namespace ImgCodecs.Diagnostics;
 
 public class ImageMagickCodec : ICodec
 {
-    private const string ProcFilename = "magick";
+    private static readonly string ProcFilename;
+
+    static ImageMagickCodec()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            ProcFilename = "magick";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            ProcFilename = "convert";
+        }
+        else
+        {
+            throw new PlatformNotSupportedException();
+        }
+    }
 
     private readonly string _targetExtension;
     private readonly ITempDirectoryProvider _tempDirectoryProvider;
@@ -29,7 +46,7 @@ public class ImageMagickCodec : ICodec
     public Process CreateDecoder(string originalFilePath, string encodedFilePath)
     {
         var tempDecodedFilePath =
-            _tempDirectoryProvider.SupplyPathForDecoded(originalFilePath, _targetExtension);
+            _tempDirectoryProvider.SupplyPathForDecoded(originalFilePath);
 
         return CreateCore(encodedFilePath, tempDecodedFilePath);
     }
