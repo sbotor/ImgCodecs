@@ -40,7 +40,9 @@ public record BenchmarkImageStats(
     ImageEntry Image,
     int MeasurementCount)
 {
-    public double CompressionRatio { get; } = OriginalSize / EncodedSize.Mean;
+    public double CompressionRatio { get; } = EncodedSize.Mean > 0
+        ? OriginalSize / EncodedSize.Mean
+        : 0;
         
     public static BenchmarkImageStats Empty(ImageEntry? entry = null)
         => new(

@@ -1,10 +1,14 @@
-/images/
+images/
 temp/
 Logs/
 
 *.csv
+
 !images.csv
 !images_original.csv
+!images_head.csv
+
+!results/**
 
 # Created by https://www.toptal.com/developers/gitignore/api/csharp,windows,rider,visualstudio,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=csharp,windows,rider,visualstudio,visualstudiocode

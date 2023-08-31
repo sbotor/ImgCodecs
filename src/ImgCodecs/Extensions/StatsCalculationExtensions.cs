@@ -7,13 +7,13 @@ public static class StatsCalculationExtensions
     public static BenchmarkImageStats CalculateStats(this BenchmarkImageResults results)
     {
         var measurements = results.Measurements;
+        var n = measurements.Count;
         
-        if (measurements.Count < 1)
+        if (n < 1)
         {
             return BenchmarkImageStats.Empty(results.Image);
         }
-
-        var n = measurements.Count;
+        
         var means = new Means();
 
         foreach (var value in measurements)
