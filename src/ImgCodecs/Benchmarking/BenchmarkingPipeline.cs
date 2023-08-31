@@ -33,7 +33,8 @@ public class BenchmarkingPipeline
     {
         var images = await _imageProvider.ReadListEntriesAsync();
         
-        _logger.LogInformation("Starting benchmarks. Image count: {count}.", images.Count);
+        _logger.LogInformation("Starting benchmarks for {type}. Image count: {count}.",
+            _settings.BenchmarkType, images.Count);
 
         if (images.Count < 1)
         {

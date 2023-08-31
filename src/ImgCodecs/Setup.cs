@@ -46,10 +46,9 @@ public static class Setup
             x.ImageBatchSize = options.BatchSize;
             x.BenchmarkType = options.BenchmarkType;
 
-            if (x.Threads < 1)
-            {
-                x.Threads = Environment.ProcessorCount;
-            }
+            x.Threads = options.Threads < 1
+                ? Environment.ProcessorCount
+                : options.Threads;
         });
 
         services.AddOptions<ProcessRunnerSettings>().Configure(x =>
@@ -74,6 +73,7 @@ public static class Setup
     public static IServiceCollection ConfigureLogging(this IServiceCollection services)
     {
         Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
             .WriteTo.Console(LogEventLevel.Information, outputTemplate: LoggingTemplate)
             .WriteTo.File("Logs/logs.txt", LogEventLevel.Debug, outputTemplate: LoggingTemplate)
             .CreateLogger();

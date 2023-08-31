@@ -1,5 +1,6 @@
 /images/
 temp/
+Logs/
 
 *.csv
 !images.csv

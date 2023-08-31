@@ -28,7 +28,10 @@ public static class Program
         using var scope = provider.CreateScope();
 
         var pipeline = scope.ServiceProvider.GetRequiredService<BenchmarkingPipeline>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Startup>>();
+        var diagHelper = new DiagnosticsHelper(
+            scope.ServiceProvider.GetRequiredService<ILogger<DiagnosticsHelper>>());
+        
+        diagHelper.LogOptions(options);
 
         try
         {
@@ -37,13 +40,30 @@ public static class Program
         }
         catch (Exception e)
         {
-            logger.LogCritical(e, "A critical error has occured.");
+            diagHelper.LogCritical(e);
             
             return -1;
         }
     }
 
-    private class Startup
+    private class DiagnosticsHelper
     {
+        private readonly ILogger<DiagnosticsHelper> _logger;
+
+        public DiagnosticsHelper(ILogger<DiagnosticsHelper> logger)
+        {
+            _logger = logger;
+        }
+
+        public void LogOptions(BenchmarkingOptions options)
+        {
+            _logger.LogDebug("Program started. Options:{newline}{@options}",
+                Environment.NewLine, options);
+        }
+
+        public void LogCritical(Exception exception)
+        {
+            _logger.LogCritical(exception, "A critical error has occured.");
+        }
     }
 }

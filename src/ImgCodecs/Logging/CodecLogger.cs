@@ -24,12 +24,24 @@ public sealed class CodecLogger : ICodecLogger, IDisposable
     public async Task LogOutput(StreamReader reader)
     {
         var str = await reader.ReadToEndAsync();
+
+        if (string.IsNullOrEmpty(str))
+        {
+            return;
+        }
+
         _stdOut.Information(str);
     }
 
     public async Task LogError(StreamReader reader)
     {
         var str = await reader.ReadToEndAsync();
+
+        if (string.IsNullOrEmpty(str))
+        {
+            return;
+        }
+
         _stdErr.Error(str);
     }
 
