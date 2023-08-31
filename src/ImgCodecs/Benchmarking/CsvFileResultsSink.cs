@@ -29,14 +29,9 @@ public class CsvFileResultsSink : IResultsSink
     
     public async Task CollectAndWriteAsync(IEnumerable<BenchmarkImageResults> results)
     {
-        var append = WrittenCount > 0;
-        
         _logger.LogDebug("Writing results.");
-        
-        await using var writer = new StreamWriter(_settings.ResultsPath, append);
-        await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
 
-        csv.Context.RegisterClassMap<ResultsMap>();
+        await using var csv = CreateWriter();
 
         var records = CalculateStats(results);
         await csv.WriteRecordsAsync(records);
@@ -50,6 +45,29 @@ public class CsvFileResultsSink : IResultsSink
     private static IReadOnlyCollection<BenchmarkImageStats> CalculateStats(IEnumerable<BenchmarkImageResults> results)
         => results.Select(x => x.CalculateStats()).ToArray();
 
+    private CsvWriter CreateWriter()
+    {
+        var append = WrittenCount > 0;
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = !append
+        };
+        
+        CsvWriter? writer = null;
+        try
+        {
+            writer = new CsvWriter(new StreamWriter(_settings.ResultsPath, append), config);
+            writer.Context.RegisterClassMap<ResultsMap>();
+            
+            return writer;
+        }
+        catch
+        {
+            writer?.Dispose();
+            throw;
+        }
+    }
+    
     private sealed class ResultsMap : ClassMap<BenchmarkImageStats>
     {
         public ResultsMap()
