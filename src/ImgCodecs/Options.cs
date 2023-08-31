@@ -36,12 +36,12 @@ public class BenchmarkingOptions
 
     [Option('r', "root", HelpText = "Path used as root for all other paths. Defaults to current directory.")]
     public string HomePath { get; set; } = ".";
-
-    [Option("log-level", HelpText = "Minimum log level. Default: Information.")]
-    public LogLevel MinimumLogLevel { get; set; } = LogLevel.Information;
     
     [Option("temp-cleanup", HelpText = "Temporary files cleanup behavior. Allowed values: DeleteAll, PreserveEncoded, PreserveDecoded, PreserveAll.")]
     public TempCleanupBehavior TempCleanupBehavior { get; set; }
+
+    [Option('t', "threads", HelpText = "Thread count. Defaults to max virtual threads for the current processor.")]
+    public int Threads { get; set; }
 
     public string GetEffectiveListPath()
         => GetEffectivePath(ListPath, "images.csv");

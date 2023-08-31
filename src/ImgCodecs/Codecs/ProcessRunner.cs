@@ -2,7 +2,7 @@
 using ImgCodecs.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace ImgCodecs.Diagnostics;
+namespace ImgCodecs.Codecs;
 
 public interface IProcessRunner
 {

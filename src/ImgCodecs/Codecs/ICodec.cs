@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ImgCodecs.Diagnostics;
+namespace ImgCodecs.Codecs;
 
 public interface ICodec
 {

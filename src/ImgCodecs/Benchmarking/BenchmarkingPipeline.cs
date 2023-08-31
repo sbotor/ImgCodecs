@@ -1,6 +1,7 @@
 ﻿using ImgCodecs.Configuration;
 using ImgCodecs.Extensions;
 using ImgCodecs.Images;
+using ImgCodecs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -31,27 +32,21 @@ public class BenchmarkingPipeline
     public async Task RunAsync()
     {
         var images = await _imageProvider.ReadListEntriesAsync();
+        
+        _logger.LogInformation("Starting benchmarks. Image count: {count}.", images.Count);
 
         if (images.Count < 1)
         {
             _logger.LogWarning("No images to process found.");
             return;
         }
-        
-        if (_settings.ImageBatchSize < 0)
-        {
-            var results = await _runner.RunBatchAsync(images);
-            await _sink.CollectAndWriteAsync(results);
-            
-            _logger.LogInformation("Finished processing {count} images.", _sink.WrittenCount);
-            
-            return;
-        }
+
+        var batchSize = _settings.ImageBatchSize < 0 ? images.Count : _settings.ImageBatchSize;
 
         var batchCount = 0;
         var expectedBatchCount = images.Count.DivideWithCeiling(_settings.ImageBatchSize);
         
-        foreach (var batch in images.Chunk(_settings.ImageBatchSize))
+        foreach (var batch in images.Chunk(batchSize))
         {
             var batchResults = await _runner.RunBatchAsync(batch);
             await _sink.CollectAndWriteAsync(batchResults);

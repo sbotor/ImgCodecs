@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using ImgCodecs.Benchmarking;
+using ImgCodecs.Codecs;
 using ImgCodecs.Configuration;
-using ImgCodecs.Diagnostics;
 using ImgCodecs.Images;
+using ImgCodecs.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -49,7 +50,8 @@ public class BenchmarkingPipelineIntegrationTests
             codecFactory,
             imgProvider,
             processRunner,
-            NullLogger<BenchmarkRunner>.Instance);
+            NullLogger<BenchmarkRunner>.Instance,
+            Substitute.For<ICodecLogger>());
 
         var resultsSink = Substitute.For<IResultsSink>();
 

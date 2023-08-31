@@ -1,11 +1,12 @@
 ﻿using ImgCodecs.Configuration;
 using ImgCodecs.Images;
+using Microsoft.Extensions.Options;
 
-namespace ImgCodecs.Diagnostics;
+namespace ImgCodecs.Codecs;
 
 public interface ICodecFactory
 {
-    ICodec GetProvider(BenchmarkType benchmarkType);
+    ICodec CreateCodec(BenchmarkType benchmarkType, int threads);
 }
 
 public class CodecFactory : ICodecFactory
@@ -17,7 +18,7 @@ public class CodecFactory : ICodecFactory
         _tempDirectoryProvider = tempDirectoryProvider;
     }
 
-    public ICodec GetProvider(BenchmarkType benchmarkType)
+    public ICodec CreateCodec(BenchmarkType benchmarkType, int threads)
         => benchmarkType switch
         {
             BenchmarkType.Flif
@@ -28,7 +29,7 @@ public class CodecFactory : ICodecFactory
 
             BenchmarkType.Hevc
                 or BenchmarkType.Vvc
-                => new FfmpegCodec(benchmarkType, _tempDirectoryProvider),
+                => new FfmpegCodec(benchmarkType, threads, _tempDirectoryProvider),
 
             _ => throw new InvalidOperationException("Invalid benchmark type.")
         };

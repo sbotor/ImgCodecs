@@ -21,7 +21,7 @@ public static class Program
 
         services.Register()
             .Configure(options)
-            .ConfigureLogging(options);
+            .ConfigureLogging();
 
         var provider = services.BuildServiceProvider();
 
@@ -38,9 +38,6 @@ public static class Program
         catch (Exception e)
         {
             logger.LogCritical(e, "A critical error has occured.");
-
-            var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-            loggerFactory.Dispose();
             
             return -1;
         }

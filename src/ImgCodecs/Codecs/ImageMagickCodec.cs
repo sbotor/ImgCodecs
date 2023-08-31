@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using ImgCodecs.Configuration;
 using ImgCodecs.Images;
 
-namespace ImgCodecs.Diagnostics;
+namespace ImgCodecs.Codecs;
 
 public class ImageMagickCodec : ICodec
 {
@@ -62,7 +62,9 @@ public class ImageMagickCodec : ICodec
                 {
                     sourceFile,
                     targetFile
-                }
+                },
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             }
         };
     }

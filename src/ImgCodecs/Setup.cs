@@ -1,14 +1,18 @@
 ﻿using ImgCodecs.Benchmarking;
+using ImgCodecs.Codecs;
 using ImgCodecs.Configuration;
-using ImgCodecs.Diagnostics;
 using ImgCodecs.Images;
+using ImgCodecs.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
 
 namespace ImgCodecs;
 
 public static class Setup
 {
+    private const string LoggingTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] <{SourceContext}> {Message:lj}{NewLine}{Exception}";
+    
     public static IServiceCollection Register(this IServiceCollection services)
     {
         services.AddScoped<BenchmarkingPipeline>();
@@ -20,6 +24,13 @@ public static class Setup
 
         services.AddScoped<IImageProvider, ImageProvider>();
         services.AddScoped<ITempDirectoryProvider, TempDirectoryProvider>();
+        
+        services.AddScoped<ICodecLoggerFactory, CodecLoggerFactory>();
+        services.AddScoped<ICodecLogger>(x =>
+        {
+            var factory = x.GetRequiredService<ICodecLoggerFactory>();
+            return factory.GetLogger();
+        });
 
         services.AddTransient<IProcessRunner, ProcessRunner>();
 
@@ -34,6 +45,11 @@ public static class Setup
             x.WarmupCount = options.WarmupCount;
             x.ImageBatchSize = options.BatchSize;
             x.BenchmarkType = options.BenchmarkType;
+
+            if (x.Threads < 1)
+            {
+                x.Threads = Environment.ProcessorCount;
+            }
         });
 
         services.AddOptions<ProcessRunnerSettings>().Configure(x =>
@@ -49,24 +65,21 @@ public static class Setup
             x.ResultsPath = options.GetEffectiveResultsPath();
             x.TempCleanupBehavior = options.TempCleanupBehavior;
         });
+        
+        services.AddSingleton<IClock, Clock>();
 
         return services;
     }
 
-    public static IServiceCollection ConfigureLogging(this IServiceCollection services, BenchmarkingOptions options)
+    public static IServiceCollection ConfigureLogging(this IServiceCollection services)
     {
-        services.AddLogging(x =>
-        {
-            x.AddSimpleConsole(c =>
-            {
-                c.IncludeScopes = true;
-                c.SingleLine = true;
-                c.TimestampFormat = "HH:mm:ss ";
-            });
-            
-            x.SetMinimumLevel(options.MinimumLogLevel);
-        });
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console(LogEventLevel.Information, outputTemplate: LoggingTemplate)
+            .WriteTo.File("Logs/logs.txt", LogEventLevel.Debug, outputTemplate: LoggingTemplate)
+            .CreateLogger();
 
+        services.AddLogging(x => x.AddSerilog(dispose: true));
+        
         return services;
     }
 }

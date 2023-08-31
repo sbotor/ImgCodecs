@@ -1,6 +1,8 @@
-﻿using ImgCodecs.Configuration;
-using ImgCodecs.Diagnostics;
+﻿using System.Diagnostics;
+using ImgCodecs.Codecs;
+using ImgCodecs.Configuration;
 using ImgCodecs.Images;
+using ImgCodecs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,18 +21,21 @@ public class BenchmarkRunner : IBenchmarkRunner
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<BenchmarkRunner> _logger;
+    private readonly ICodecLogger _codecLogger;
 
     public BenchmarkRunner(IOptions<BenchmarkSettings> options,
         ICodecFactory codecFactory,
         IImageProvider imageProvider,
         IProcessRunner processRunner,
-        ILogger<BenchmarkRunner> logger)
+        ILogger<BenchmarkRunner> logger,
+        ICodecLogger codecLogger)
     {
         _settings = options.Value;
-        _codec = codecFactory.GetProvider(_settings.BenchmarkType);
+        _codec = codecFactory.CreateCodec(_settings.BenchmarkType, _settings.Threads);
         _imageProvider = imageProvider;
         _processRunner = processRunner;
         _logger = logger;
+        _codecLogger = codecLogger;
     }
     
     public async Task<IReadOnlyCollection<BenchmarkImageResults>> RunBatchAsync(IReadOnlyCollection<ImageEntry> images)
@@ -100,6 +105,7 @@ public class BenchmarkRunner : IBenchmarkRunner
         using var encoder = _codec.CreateEncoder(path);
 
         await _processRunner.RunTimedAsync(encoder.Process);
+        await LogOutputs(encoder.Process);
 
         if (encoder.Process.ExitCode == 0)
         {
@@ -116,6 +122,7 @@ public class BenchmarkRunner : IBenchmarkRunner
         using var process = _codec.CreateDecoder(originalPath, encodedPath);
 
         await _processRunner.RunTimedAsync(process);
+        await LogOutputs(process);
         
         if (process.ExitCode == 0)
         {
@@ -126,5 +133,26 @@ public class BenchmarkRunner : IBenchmarkRunner
             encodedPath, process.ExitCode);
 
         return false;
+    }
+
+    private async Task LogOutputs(Process process)
+    {
+        try
+        {
+            await _codecLogger.LogOutput(process.StandardOutput);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not log standard output.");
+        }
+
+        try
+        {
+            await _codecLogger.LogError(process.StandardError);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not log standard error.");
+        }
     }
 }

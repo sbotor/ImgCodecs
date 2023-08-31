@@ -2,21 +2,24 @@
 using ImgCodecs.Configuration;
 using ImgCodecs.Images;
 
-namespace ImgCodecs.Diagnostics;
+namespace ImgCodecs.Codecs;
 
 public class FfmpegCodec : ICodec
 {
     private const string ProcFilename = "ffmpeg";
     private const string TargetExtension = ".mp4";
-    
-    private const string Crf = "28";
 
     private readonly BenchmarkType _benchmarkType;
+    private readonly string _threads;
     private readonly ITempDirectoryProvider _tempDirectoryProvider;
 
-    public FfmpegCodec(BenchmarkType benchmarkType, ITempDirectoryProvider tempDirectoryProvider)
+    public FfmpegCodec(
+        BenchmarkType benchmarkType,
+        int threads,
+        ITempDirectoryProvider tempDirectoryProvider)
     {
         _benchmarkType = benchmarkType;
+        _threads = threads.ToString();
         _tempDirectoryProvider = tempDirectoryProvider;
     }
     
@@ -24,7 +27,7 @@ public class FfmpegCodec : ICodec
     {
         var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(originalFilePath, TargetExtension);
         var process = CreateCore(GetEncoderArgs(originalFilePath, tempEncodedFilePath));
-
+        
         return new(process, tempEncodedFilePath);
     }
 
@@ -39,7 +42,9 @@ public class FfmpegCodec : ICodec
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = ProcFilename
+            FileName = ProcFilename,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
         };
 
         foreach (var arg in args)
@@ -60,11 +65,11 @@ public class FfmpegCodec : ICodec
             return new[]
             {
                 "-y",
-                "-loop", "1",
                 "-i", originalFilePath,
                 "-c:v", "libx265",
-                "-crf", Crf,
-                "-t", "1",
+                "-x265-params", "lossless=1",
+                "-frames:v", "1",
+                "-threads", _threads,
                 tempEncodedFilePath
             };
         }
@@ -73,21 +78,22 @@ public class FfmpegCodec : ICodec
             return new[]
             {
                 "-y",
-                "-loop", "1",
                 "-i", originalFilePath,
                 "-c:v", "vvc",
-                "-t", "1",
+                "-frames:v", "1",
+                "-threads", _threads,
                 tempEncodedFilePath
             };
         }
     }
 
-    private static IEnumerable<string> GetDecoderArgs(string encodedFilePath, string tempDecodedFilePath)
+    private IEnumerable<string> GetDecoderArgs(string encodedFilePath, string tempDecodedFilePath)
         => new[]
         {
             "-y",
             "-i", encodedFilePath,
             "-frames:v", "1",
+            "-threads", _threads,
             tempDecodedFilePath
         };
 }
