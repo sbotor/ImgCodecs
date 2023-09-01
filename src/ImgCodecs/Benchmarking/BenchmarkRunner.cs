@@ -10,7 +10,8 @@ namespace ImgCodecs.Benchmarking;
 
 public interface IBenchmarkRunner
 {
-    Task<IReadOnlyCollection<BenchmarkImageResults>> RunBatchAsync(IReadOnlyCollection<ImageEntry> images);
+    Task<IReadOnlyCollection<BenchmarkImageResults>> RunBatchAsync(IReadOnlyCollection<ImageEntry> images,
+        CancellationToken cancellationToken);
 }
 
 public class BenchmarkRunner : IBenchmarkRunner
@@ -38,42 +39,68 @@ public class BenchmarkRunner : IBenchmarkRunner
         _codecLogger = codecLogger;
     }
     
-    public async Task<IReadOnlyCollection<BenchmarkImageResults>> RunBatchAsync(IReadOnlyCollection<ImageEntry> images)
+    public async Task<IReadOnlyCollection<BenchmarkImageResults>> RunBatchAsync(IReadOnlyCollection<ImageEntry> images,
+        CancellationToken cancellationToken)
     {
         _logger.LogDebug("Started processing a batch of {count} images.", images.Count);
         
         var list = new List<BenchmarkImageResults>(images.Count);
         foreach (var entry in images)
         {
-            var result = await RunForImageAsync(entry);
+            var result = await RunForImageAsync(entry, cancellationToken);
             list.Add(result);
             
             _logger.LogDebug("Processed image {name}.", entry.Name);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
 
         return list;
     }
 
-    private async Task<BenchmarkImageResults> RunForImageAsync(ImageEntry image)
+    private async Task<BenchmarkImageResults> RunForImageAsync(ImageEntry image,
+        CancellationToken cancellationToken)
     {
         var originalInfo = _imageProvider.GetInfoFromFilename(image.Name);
         var results = new BenchmarkImageResults(image, originalInfo.ByteCount);
         
         _logger.LogDebug("Processing image {name}.", image.Name);
-        
+
+        try
+        {
+            await RunWithCancellation(originalInfo, results, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return results;
+        }
+
+        return results;
+    }
+
+    private async Task RunWithCancellation(
+        ImageFileInfo originalInfo, BenchmarkImageResults results,
+        CancellationToken cancellationToken)
+    {
         for (var i = 0; i < _settings.WarmupCount; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var encodedPath = await MeasureEncoding(originalInfo.FullPath);
             if (encodedPath is null)
             {
                 continue;
             }
             
+            cancellationToken.ThrowIfCancellationRequested();
             await MeasureDecoding(originalInfo.FullPath, encodedPath);
         }
 
         for (var i = 0; i < _settings.RunCount; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var encodedPath = await MeasureEncoding(originalInfo.FullPath);
             if (encodedPath is null)
             {
@@ -83,6 +110,7 @@ public class BenchmarkRunner : IBenchmarkRunner
             var encodingTime = _processRunner.LastRunTime;
             var encodedInfo = _imageProvider.GetInfoFromPath(encodedPath);
             
+            cancellationToken.ThrowIfCancellationRequested();
             var decodedSuccessfully = await MeasureDecoding(originalInfo.FullPath, encodedPath);
             if (!decodedSuccessfully)
             {
@@ -96,8 +124,6 @@ public class BenchmarkRunner : IBenchmarkRunner
                 decodingTime,
                 encodedInfo.ByteCount));
         }
-
-        return results;
     }
 
     private async Task<string?> MeasureEncoding(string path)

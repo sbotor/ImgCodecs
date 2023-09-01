@@ -29,7 +29,7 @@ public class BenchmarkingPipeline
         _logger = logger;
     }
 
-    public async Task RunAsync()
+    public async Task RunAsync(CancellationToken cancellationToken)
     {
         var images = await _imageProvider.ReadListEntriesAsync();
         
@@ -49,12 +49,14 @@ public class BenchmarkingPipeline
         
         foreach (var batch in images.Chunk(batchSize))
         {
-            var batchResults = await _runner.RunBatchAsync(batch);
+            var batchResults = await _runner.RunBatchAsync(batch, cancellationToken);
             await _sink.CollectAndWriteAsync(batchResults);
 
             batchCount++;
-            _logger.LogInformation("Finished processing batch {count}/{expCount}.",
-                batchCount, expectedBatchCount);
+            _logger.LogInformation("Finished processing batch {batchCount}/{expBatchCount} ({count}/{expCount}).",
+                batchCount, expectedBatchCount, batchResults.Count, batch.Length);
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
         
         _logger.LogInformation("Finished processing {count} images.", _sink.WrittenCount);

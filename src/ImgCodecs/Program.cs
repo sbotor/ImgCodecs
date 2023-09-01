@@ -5,44 +5,65 @@ using Microsoft.Extensions.Logging;
 
 namespace ImgCodecs;
 
+public enum ReturnValue
+{
+    ParsingError = -2,
+    Error = -1,
+    Ok = 0,
+    Canceled = 1
+}
+
 public static class Program
 {
-    public static Task<int> Main(string[] args)
+    private static readonly CancellationTokenSource Cts = new();
+    
+    public static async Task<int> Main(string[] args)
     {
         var task = Parser.Default.ParseArguments<BenchmarkingOptions>(args)
-            .MapResult(Run, _ => Task.FromResult(-1));
+            .MapResult(Run, _ => Task.FromResult(ReturnValue.ParsingError));
 
-        return task;
+        return (int)await task;
     }
 
-    private static async Task<int> Run(BenchmarkingOptions options)
+    private static async Task<ReturnValue> Run(BenchmarkingOptions options)
     {
+        Console.CancelKeyPress += (_, args) =>
+        {
+            Cts.Cancel();
+            args.Cancel = true;
+        };
+        
         var services = new ServiceCollection();
 
         services.Register()
             .Configure(options)
             .ConfigureLogging();
 
-        var provider = services.BuildServiceProvider();
-
+        await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
 
-        var pipeline = scope.ServiceProvider.GetRequiredService<BenchmarkingPipeline>();
         var diagHelper = new DiagnosticsHelper(
             scope.ServiceProvider.GetRequiredService<ILogger<DiagnosticsHelper>>());
-        
+
         diagHelper.LogOptions(options);
+
+        var pipeline = scope.ServiceProvider.GetRequiredService<BenchmarkingPipeline>();
 
         try
         {
-            await pipeline.RunAsync();
-            return 0;
+            await pipeline.RunAsync(Cts.Token);
+            return ReturnValue.Ok;
+        }
+        catch (OperationCanceledException)
+        {
+            diagHelper.LogCancellation();
+            return ReturnValue.Canceled;
         }
         catch (Exception e)
         {
             diagHelper.LogCritical(e);
-            
-            return -1;
+
+            return ReturnValue.Error;
         }
     }
 
@@ -64,6 +85,11 @@ public static class Program
         public void LogCritical(Exception exception)
         {
             _logger.LogCritical(exception, "A critical error has occured.");
+        }
+
+        public void LogCancellation()
+        {
+            _logger.LogWarning("The run was cancelled.");
         }
     }
 }
