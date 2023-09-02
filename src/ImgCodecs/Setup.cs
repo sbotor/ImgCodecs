@@ -25,14 +25,15 @@ public static class Setup
         services.AddScoped<IImageProvider, ImageProvider>();
         services.AddScoped<ITempDirectoryProvider, TempDirectoryProvider>();
         
-        services.AddScoped<ICodecLoggerFactory, CodecLoggerFactory>();
-        services.AddScoped<ICodecLogger>(x =>
+        services.AddScoped<IProcessRunner, ProcessRunner>();
+        services.AddScoped<IProcessLoggerProvider, ProcessLoggerProvider>();
+        services.AddScoped(x =>
         {
-            var factory = x.GetRequiredService<ICodecLoggerFactory>();
-            return factory.GetLogger();
+            var provider = x.GetRequiredService<IProcessLoggerProvider>();
+            return provider.GetLogger();
         });
 
-        services.AddTransient<IProcessRunner, ProcessRunner>();
+        services.AddTransient<ICodecRunner, CodecRunner>();
 
         return services;
     }

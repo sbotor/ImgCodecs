@@ -1,40 +1,90 @@
-﻿using System.Diagnostics;
-using ImgCodecs.Configuration;
-using Microsoft.Extensions.Options;
+using System.Diagnostics;
+using ImgCodecs.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace ImgCodecs.Codecs;
 
 public interface IProcessRunner
 {
-    TimeSpan Timeout { get; set; }
-    double LastRunTime { get; }
-    Task RunTimedAsync(Process process);
+    Task<int?> RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken);
 }
 
 public class ProcessRunner : IProcessRunner
 {
-    private readonly Stopwatch _stopwatch = new();
+    private readonly ILogger<ProcessRunner> _logger;
+    private readonly IProcessLogger _processLogger;
 
-    public TimeSpan Timeout { get; set; }
-    public double LastRunTime { get; private set; }
-
-    public ProcessRunner(IOptions<ProcessRunnerSettings> options)
+    public ProcessRunner(ILogger<ProcessRunner> logger, IProcessLogger processLogger)
     {
-        Timeout = options.Value.Timeout;
+        _logger = logger;
+        _processLogger = processLogger;
+    }
+
+    public async Task<int?> RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken)
+    {
+        using var process = new Process();
+        process.StartInfo = startInfo;
+
+        return await RunAsync(process, cancellationToken);
     }
     
-    public async Task RunTimedAsync(Process process)
+    private async Task<int?> RunAsync(Process process, CancellationToken cancellationToken)
     {
-        using var cts = Timeout > TimeSpan.Zero
-            ? new CancellationTokenSource(Timeout)
-            : null;
+        var processCommand = GetProcessCommand(process);
+        
+        try
+        {
+            _logger.LogDebug("Starting process '{cmd}'.", processCommand);
+            
+            process.Start();
+            await process.WaitForExitAsync(cancellationToken);
+            
+            _logger.LogDebug("Finished process '{cmd}'. Exit code: {exitCode}",
+                processCommand, process.ExitCode);
 
-        _stopwatch.Restart();
+            await LogOutputs(process);
+            
+            return process.ExitCode;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Error running process '{cmd}'", processCommand);
+            return null;
+        }
+    }
+    
+    private async Task LogOutputs(Process process)
+    {
+        try
+        {
+            await _processLogger.LogOutput(process.StandardOutput);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not log standard output.");
+        }
 
-        process.Start();
-        await process.WaitForExitAsync(cts?.Token ?? CancellationToken.None);
+        try
+        {
+            await _processLogger.LogError(process.StandardError);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not log standard error.");
+        }
+    }
 
-        _stopwatch.Stop();
-        LastRunTime = _stopwatch.ElapsedMilliseconds;
+    private static string GetProcessCommand(Process process)
+    {
+        var startInfo = process.StartInfo;
+        var args = !string.IsNullOrEmpty(startInfo.Arguments)
+            ? startInfo.Arguments
+            : string.Join(' ', startInfo.ArgumentList);
+
+        return $"{process.ProcessName} {args}";
     }
 }

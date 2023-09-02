@@ -2,20 +2,20 @@ using Serilog.Core;
 
 namespace ImgCodecs.Logging;
 
-public interface ICodecLogger
+public interface IProcessLogger
 {
     public Task LogOutput(StreamReader reader);
     public Task LogError(StreamReader reader);
 }
 
-public sealed class CodecLogger : ICodecLogger, IDisposable
+public sealed class ProcessLogger : IProcessLogger, IDisposable
 {
     private readonly Logger _stdOut;
     private readonly Logger _stdErr;
     
     private bool _disposed;
 
-    public CodecLogger(Logger stdOut, Logger stdErr)
+    public ProcessLogger(Logger stdOut, Logger stdErr)
     {
         _stdOut = stdOut;
         _stdErr = stdErr;

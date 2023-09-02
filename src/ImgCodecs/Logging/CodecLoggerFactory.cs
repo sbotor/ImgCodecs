@@ -4,34 +4,34 @@ using Serilog;
 
 namespace ImgCodecs.Logging;
 
-public interface ICodecLoggerFactory : IDisposable
+public interface IProcessLoggerProvider : IDisposable
 {
-    ICodecLogger GetLogger();
+    IProcessLogger GetLogger();
 }
 
-public class CodecLoggerFactory : ICodecLoggerFactory
+public class ProcessLoggerProvider : IProcessLoggerProvider
 {
     private readonly IClock _clock;
     private readonly string _codecName;
     
-    private CodecLogger? _logger;
+    private ProcessLogger? _logger;
     
     private bool _disposed;
 
-    public CodecLoggerFactory(IClock clock, IOptions<BenchmarkSettings> options)
+    public ProcessLoggerProvider(IClock clock, IOptions<BenchmarkSettings> options)
     {
         _clock = clock;
         _codecName = options.Value.BenchmarkType.ToString();
     }
     
-    public ICodecLogger GetLogger()
+    public IProcessLogger GetLogger()
     {
         ThrowIfDisposed();
 
         return _logger ??= CreateLogger();
     }
 
-    private CodecLogger CreateLogger()
+    private ProcessLogger CreateLogger()
     {
         var now = _clock.Now.ToString("yyyy-MM-dd-HH-mm-ss");
         var filenameOut = $"Logs/{now}_{_codecName}_out.txt";
@@ -49,7 +49,7 @@ public class CodecLoggerFactory : ICodecLoggerFactory
     {
         if (_disposed)
         {
-            throw new ObjectDisposedException(nameof(CodecLoggerFactory));
+            throw new ObjectDisposedException(nameof(ProcessLoggerProvider));
         }
     }
 

@@ -20,23 +20,20 @@ public class BenchmarkRunner : IBenchmarkRunner
     private readonly ICodec _codec;
     private readonly IImageProvider _imageProvider;
 
-    private readonly IProcessRunner _processRunner;
+    private readonly ICodecRunner _codecRunner;
     private readonly ILogger<BenchmarkRunner> _logger;
-    private readonly ICodecLogger _codecLogger;
 
     public BenchmarkRunner(IOptions<BenchmarkSettings> options,
         ICodecFactory codecFactory,
         IImageProvider imageProvider,
-        IProcessRunner processRunner,
-        ILogger<BenchmarkRunner> logger,
-        ICodecLogger codecLogger)
+        ICodecRunner codecRunner,
+        ILogger<BenchmarkRunner> logger)
     {
         _settings = options.Value;
         _codec = codecFactory.CreateCodec(_settings.BenchmarkType, _settings.Threads);
         _imageProvider = imageProvider;
-        _processRunner = processRunner;
+        _codecRunner = codecRunner;
         _logger = logger;
-        _codecLogger = codecLogger;
     }
     
     public async Task<IReadOnlyCollection<BenchmarkImageResults>> RunBatchAsync(IReadOnlyCollection<ImageEntry> images,
@@ -88,36 +85,39 @@ public class BenchmarkRunner : IBenchmarkRunner
         for (var i = 0; i < _settings.WarmupCount; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var encodedPath = await MeasureEncoding(originalInfo.FullPath);
+            var encodedPath = await MeasureEncoding(originalInfo.FullPath, cancellationToken);
             if (encodedPath is null)
             {
                 continue;
             }
             
             cancellationToken.ThrowIfCancellationRequested();
-            await MeasureDecoding(originalInfo.FullPath, encodedPath);
+            await MeasureDecoding(originalInfo.FullPath, encodedPath, cancellationToken);
         }
 
         for (var i = 0; i < _settings.RunCount; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var encodedPath = await MeasureEncoding(originalInfo.FullPath);
+            var encodedPath = await MeasureEncoding(originalInfo.FullPath, cancellationToken);
             if (encodedPath is null)
             {
                 continue;
             }
             
-            var encodingTime = _processRunner.LastRunTime;
+            var encodingTime = _codecRunner.LastRunTime;
             var encodedInfo = _imageProvider.GetInfoFromPath(encodedPath);
             
             cancellationToken.ThrowIfCancellationRequested();
-            var decodedSuccessfully = await MeasureDecoding(originalInfo.FullPath, encodedPath);
-            if (!decodedSuccessfully)
+            var decodingSuccess = await MeasureDecoding(
+                originalInfo.FullPath,
+                encodedPath,
+                cancellationToken);
+            if (!decodingSuccess)
             {
                 continue;
             }
             
-            var decodingTime = _processRunner.LastRunTime;
+            var decodingTime = _codecRunner.LastRunTime;
             
             results.Collect(new(
                 encodingTime,
@@ -126,59 +126,20 @@ public class BenchmarkRunner : IBenchmarkRunner
         }
     }
 
-    private async Task<string?> MeasureEncoding(string path)
+    private async Task<string?> MeasureEncoding(string path, CancellationToken cancellationToken)
     {
         using var encoder = _codec.CreateEncoder(path);
 
-        await _processRunner.RunTimedAsync(encoder.Process);
-        await LogOutputs(encoder.Process);
+        var success = await _codecRunner.RunTimedAsync(encoder, cancellationToken);
 
-        if (encoder.Process.ExitCode == 0)
-        {
-            return encoder.EncodedPath;
-        }
-        
-        _logger.LogError("Could not encode file {path}. Exit code: {code}.",
-            path, encoder.Process.ExitCode);
-        return null;
+        return success ? encoder.EncodedPath : null;
     }
 
-    private async Task<bool> MeasureDecoding(string originalPath, string encodedPath)
+    private async Task<bool> MeasureDecoding(string originalPath, string encodedPath,
+        CancellationToken cancellationToken)
     {
-        using var process = _codec.CreateDecoder(originalPath, encodedPath);
+        using var decoder = _codec.CreateDecoder(originalPath, encodedPath);
 
-        await _processRunner.RunTimedAsync(process);
-        await LogOutputs(process);
-        
-        if (process.ExitCode == 0)
-        {
-            return true;
-        }
-        
-        _logger.LogError("Could not decode file {path}. Exit code: {code}.",
-            encodedPath, process.ExitCode);
-
-        return false;
-    }
-
-    private async Task LogOutputs(Process process)
-    {
-        try
-        {
-            await _codecLogger.LogOutput(process.StandardOutput);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Could not log standard output.");
-        }
-
-        try
-        {
-            await _codecLogger.LogError(process.StandardError);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Could not log standard error.");
-        }
+        return await _codecRunner.RunTimedAsync(decoder, cancellationToken);
     }
 }

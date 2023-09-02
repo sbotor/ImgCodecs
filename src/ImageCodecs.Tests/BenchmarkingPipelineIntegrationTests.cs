@@ -39,19 +39,23 @@ public class BenchmarkingPipelineIntegrationTests
         tempDirProvider.SupplyPathForDecoded(Arg.Any<string>())
             .Returns("test");
 
-        var codecFactory = new CodecFactory(tempDirProvider);
-
         var processRunner = Substitute.For<IProcessRunner>();
-        processRunner.LastRunTime.Returns(_ => Random.Shared.NextDouble());
-        processRunner.RunTimedAsync(Arg.Any<Process>()).Returns(Task.CompletedTask);
+        processRunner.RunAsync(Arg.Any<ProcessStartInfo>(), Arg.Any<CancellationToken>())
+            .Returns(0);
+        
+        var codecFactory = new CodecFactory(tempDirProvider, processRunner);
+
+        var codecRunner = Substitute.For<ICodecRunner>();
+        codecRunner.LastRunTime.Returns(_ => Random.Shared.NextDouble());
+        codecRunner.RunTimedAsync(Arg.Any<ICodecCoder>(), Arg.Any<CancellationToken>())
+            .Returns(true);
 
         var runner = new BenchmarkRunner(
             benchmarkOptions,
             codecFactory,
             imgProvider,
-            processRunner,
-            NullLogger<BenchmarkRunner>.Instance,
-            Substitute.For<ICodecLogger>());
+            codecRunner,
+            NullLogger<BenchmarkRunner>.Instance);
 
         var resultsSink = Substitute.For<IResultsSink>();
 
@@ -69,7 +73,7 @@ public class BenchmarkingPipelineIntegrationTests
     {
         _benchmarkSettings.BenchmarkType = type;
         
-        await _sut.RunAsync();
+        await _sut.RunAsync(CancellationToken.None);
     }
 
     public static TheoryData<BenchmarkType> BenchmarkTypes()
