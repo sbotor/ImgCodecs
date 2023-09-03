@@ -1,4 +1,6 @@
-﻿namespace ImgCodecs.Codecs;
+﻿using ImgCodecs.Images;
+
+namespace ImgCodecs.Codecs;
 
 public interface ICodecCoder : IDisposable
 {
@@ -12,6 +14,8 @@ public interface ICodecEncoder : ICodecCoder
 
 public interface ICodec
 {
-    ICodecEncoder CreateEncoder(string originalFilePath);
-    ICodecCoder CreateDecoder(string originalFilePath, string encodedFilePath);
+    ICodecEncoder CreateEncoder(ImageInfo info);
+    ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath);
 }
+
+public record ImageInfo(ImageEntry Entry, ImageFileInfo File);

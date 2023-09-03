@@ -5,17 +5,17 @@ namespace ImgCodecs.Codecs.ImageMagick;
 
 public static class ImageMagickHelpers
 {
-    public static readonly string ProcFilename;
+    public static readonly string Filename;
     
     static ImageMagickHelpers()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            ProcFilename = "magick";
+            Filename = "magick";
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            ProcFilename = "convert";
+            Filename = "convert";
         }
         else
         {

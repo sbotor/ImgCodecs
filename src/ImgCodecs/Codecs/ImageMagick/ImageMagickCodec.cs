@@ -19,21 +19,21 @@ public class ImageMagickCodec : ICodec
         _processRunner = processRunner;
     }
     
-    public ICodecEncoder CreateEncoder(string originalFilePath)
+    public ICodecEncoder CreateEncoder(ImageInfo info)
     {
-        var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(originalFilePath, _targetExtension);
+        var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(info.File.FullPath, _targetExtension);
 
-        var parameters = new CodecParameters(originalFilePath, tempEncodedFilePath);
+        var parameters = new CodecParameters(info.File.FullPath, tempEncodedFilePath);
 
         return new ImageMagickCoder(parameters, _processRunner);
     }
     
-    public ICodecCoder CreateDecoder(string originalFilePath, string encodedFilePath)
+    public ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath)
     {
         var tempDecodedFilePath =
-            _tempDirectoryProvider.SupplyPathForDecoded(originalFilePath);
+            _tempDirectoryProvider.SupplyPathForDecoded(info.File.FullPath);
 
-        var parameters = new CodecParameters(originalFilePath, tempDecodedFilePath);
+        var parameters = new CodecParameters(info.File.FullPath, tempDecodedFilePath);
 
         return new ImageMagickCoder(parameters, _processRunner);
     }

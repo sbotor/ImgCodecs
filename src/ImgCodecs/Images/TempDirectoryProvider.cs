@@ -32,6 +32,7 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
     public string SupplyPathForEncoded(string originalFilePath, string targetExtension)
     {
         ThrowIfDisposed();
+        
         var filename = Path.GetFileName(originalFilePath);
         return Attach($"{EncodedPrefix}{filename}{targetExtension}");
     }

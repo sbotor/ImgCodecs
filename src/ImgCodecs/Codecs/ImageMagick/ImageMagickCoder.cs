@@ -15,7 +15,7 @@ public sealed class ImageMagickCoder : ICodecEncoder
 
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
     {
-        var startInfo = ProcessHelpers.CreateStartInfo(ImageMagickHelpers.ProcFilename, new[]
+        var startInfo = ProcessHelpers.CreateStartInfo(ImageMagickHelpers.Filename, new[]
         {
             _parameters.SourcePath,
             _parameters.DestinationPath

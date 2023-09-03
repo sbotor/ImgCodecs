@@ -13,7 +13,7 @@ public sealed class FfmpegDecoder : ICodecCoder
     
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
     {
-        var startInfo = ProcessHelpers.CreateStartInfo(FfmpegHelpers.ProcFilename, GetArguments());
+        var startInfo = ProcessHelpers.CreateStartInfo(FfmpegHelpers.FfmpegFilename, GetArguments());
         return await _processRunner.RunAsync(startInfo, cancellationToken) == 0;
     }
     

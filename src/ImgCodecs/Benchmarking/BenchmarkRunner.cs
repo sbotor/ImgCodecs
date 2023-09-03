@@ -1,8 +1,6 @@
-﻿using System.Diagnostics;
-using ImgCodecs.Codecs;
+﻿using ImgCodecs.Codecs;
 using ImgCodecs.Configuration;
 using ImgCodecs.Images;
-using ImgCodecs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -61,14 +59,15 @@ public class BenchmarkRunner : IBenchmarkRunner
     private async Task<BenchmarkImageResults> RunForImageAsync(ImageEntry image,
         CancellationToken cancellationToken)
     {
-        var originalInfo = _imageProvider.GetInfoFromFilename(image.Name);
-        var results = new BenchmarkImageResults(image, originalInfo.ByteCount);
+        var originalFileInfo = _imageProvider.GetInfoFromFilename(image.Name);
+        var results = new BenchmarkImageResults(image, originalFileInfo.ByteCount);
         
         _logger.LogDebug("Processing image {name}.", image.Name);
 
         try
         {
-            await RunWithCancellation(originalInfo, results, cancellationToken);
+            var info = new ImageInfo(image, originalFileInfo);
+            await RunWithCancellation(info, results, cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -79,26 +78,26 @@ public class BenchmarkRunner : IBenchmarkRunner
     }
 
     private async Task RunWithCancellation(
-        ImageFileInfo originalInfo, BenchmarkImageResults results,
+        ImageInfo originalInfo, BenchmarkImageResults results,
         CancellationToken cancellationToken)
     {
         for (var i = 0; i < _settings.WarmupCount; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var encodedPath = await MeasureEncoding(originalInfo.FullPath, cancellationToken);
+            var encodedPath = await MeasureEncoding(originalInfo, cancellationToken);
             if (encodedPath is null)
             {
                 continue;
             }
             
             cancellationToken.ThrowIfCancellationRequested();
-            await MeasureDecoding(originalInfo.FullPath, encodedPath, cancellationToken);
+            await MeasureDecoding(originalInfo, encodedPath, cancellationToken);
         }
 
         for (var i = 0; i < _settings.RunCount; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var encodedPath = await MeasureEncoding(originalInfo.FullPath, cancellationToken);
+            var encodedPath = await MeasureEncoding(originalInfo, cancellationToken);
             if (encodedPath is null)
             {
                 continue;
@@ -109,7 +108,7 @@ public class BenchmarkRunner : IBenchmarkRunner
             
             cancellationToken.ThrowIfCancellationRequested();
             var decodingSuccess = await MeasureDecoding(
-                originalInfo.FullPath,
+                originalInfo,
                 encodedPath,
                 cancellationToken);
             if (!decodingSuccess)
@@ -126,24 +125,24 @@ public class BenchmarkRunner : IBenchmarkRunner
         }
     }
 
-    private async Task<string?> MeasureEncoding(string path, CancellationToken cancellationToken)
+    private async Task<string?> MeasureEncoding(ImageInfo info, CancellationToken cancellationToken)
     {
-        using var encoder = _codec.CreateEncoder(path);
+        using var encoder = _codec.CreateEncoder(info);
 
         var success = await _codecRunner.RunTimedAsync(encoder, cancellationToken);
 
         if (!success)
         {
-            _logger.LogWarning("Could not encode file {path}.", path);
+            _logger.LogWarning("Could not encode file {path}.", info.File.FullPath);
         }
 
         return success ? encoder.EncodedPath : null;
     }
 
-    private async Task<bool> MeasureDecoding(string originalPath, string encodedPath,
+    private async Task<bool> MeasureDecoding(ImageInfo info, string encodedPath,
         CancellationToken cancellationToken)
     {
-        using var decoder = _codec.CreateDecoder(originalPath, encodedPath);
+        using var decoder = _codec.CreateDecoder(info, encodedPath);
 
         var success = await _codecRunner.RunTimedAsync(decoder, cancellationToken);
 

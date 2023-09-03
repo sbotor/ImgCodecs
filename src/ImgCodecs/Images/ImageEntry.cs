@@ -1,18 +1,6 @@
-using CsvHelper.Configuration;
-
 namespace ImgCodecs.Images;
 
-public class ImageEntry
+public record ImageEntry(string Name, bool IsPhoto, ImageDimensions Dimensions)
 {
-    public string Name { get; set; } = string.Empty;
-    public bool IsPhoto { get; set; }
-    
-    public class CsvMap : ClassMap<ImageEntry>
-    {
-        public CsvMap()
-        {
-            Map(x => x.Name).Name("name");
-            Map(x => x.IsPhoto).Name("photo");
-        }
-    }
+    public static readonly ImageEntry Empty = new ImageEntry(string.Empty, default, default);
 };

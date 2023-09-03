@@ -8,6 +8,7 @@ Logs/
 !images.csv
 !images_original.csv
 !images_head.csv
+!images_no_dims.csv
 
 !results/**
 

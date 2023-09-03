@@ -6,6 +6,7 @@ namespace ImgCodecs.Codecs.Ffmpeg;
 public class FfmpegCodec : ICodec
 {
     private readonly BenchmarkType _benchmarkType;
+
     private readonly int _threads;
     private readonly ITempDirectoryProvider _tempDirectoryProvider;
     private readonly IProcessRunner _processRunner;
@@ -21,30 +22,50 @@ public class FfmpegCodec : ICodec
         _tempDirectoryProvider = tempDirectoryProvider;
         _processRunner = processRunner;
     }
-    
-    public ICodecEncoder CreateEncoder(string originalFilePath)
+
+    public ICodecEncoder CreateEncoder(ImageInfo info)
     {
         var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(
-            originalFilePath,
+            info.File.FullPath,
             FfmpegHelpers.TargetExtension);
 
         var parameters = new FfmpegCodecParameters(
-            originalFilePath,
+            info.File.FullPath,
             tempEncodedFilePath,
             _threads);
 
-        return new FfmpegEncoder(_benchmarkType, parameters, _processRunner);
+        switch (_benchmarkType)
+        {
+            case BenchmarkType.Hevc:
+                return new HevcEncoder(new(
+                        info.File.FullPath,
+                        tempEncodedFilePath,
+                        _threads),
+                    _processRunner);
+            case BenchmarkType.Vvc:
+                return new VvcEncoder(new(
+                        info.File.FullPath,
+                        tempEncodedFilePath,
+                        _threads,
+                        info.Entry.Dimensions),
+                    _processRunner, _tempDirectoryProvider);
+            default:
+                throw InvalidBenchmarkType();
+        }
     }
 
-    public ICodecCoder CreateDecoder(string originalFilePath, string encodedFilePath)
+    public ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath)
     {
-        var tempDecodedFilePath = _tempDirectoryProvider.SupplyPathForDecoded(originalFilePath);
+        var tempDecodedFilePath = _tempDirectoryProvider.SupplyPathForDecoded(info.File.FullPath);
 
         var parameters = new FfmpegCodecParameters(
-            originalFilePath,
             encodedFilePath,
+            tempDecodedFilePath,
             _threads);
-        
+
         return new FfmpegDecoder(parameters, _processRunner);
     }
+
+    private InvalidOperationException InvalidBenchmarkType()
+        => new($"Invalid benchmark type {_benchmarkType} for {nameof(FfmpegCodec)}.");
 }

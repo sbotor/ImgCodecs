@@ -1,9 +1,12 @@
 from PIL import Image
 import os
 from pathlib import Path
+import pandas as pd
 
 IMG_DIR = 'images_raw'
 TARGET_DIR = 'images'
+LIST_PATH = 'images_no_dims.csv'
+LIST_TARGET_PATH = 'images.csv'
 ALLOWED_EXTENSIONS = ('.ppm')
 
 SILENT = False
@@ -25,15 +28,25 @@ def convert_img(path: Path):
     output_path = Path(TARGET_DIR, path.name)
     converted.save(output_path)
 
+    return width, height
+
 def main():
     if not os.path.exists(TARGET_DIR):
         os.makedirs(TARGET_DIR)
+        
+    df = pd.read_csv(LIST_PATH)
+    df['width'] = 0
+    df['height'] = 0
 
     for dir in os.listdir(IMG_DIR):
         path = Path(IMG_DIR, dir)
         
         if path.is_file() and path.suffix in ALLOWED_EXTENSIONS:
-            convert_img(path)
+            width, height = convert_img(path)
+
+            df.loc[df['name'] == path.name, ['width', 'height']] = (width, height)
+
+    df.to_csv(LIST_TARGET_PATH, index=False)
 
 if __name__ == '__main__':
     main()

@@ -50,6 +50,6 @@ public record BenchmarkImageStats(
             BenchmarkStats.Empty,
             BenchmarkStats.Empty,
             default,
-            entry ?? new(),
+            entry ?? ImageEntry.Empty,
             0);
 }
