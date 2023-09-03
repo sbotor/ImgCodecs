@@ -83,8 +83,8 @@ public class ProcessRunner : IProcessRunner
         var startInfo = process.StartInfo;
         var args = !string.IsNullOrEmpty(startInfo.Arguments)
             ? startInfo.Arguments
-            : string.Join(' ', startInfo.ArgumentList);
+            : string.Join(' ', startInfo.ArgumentList.Select(x => $"\"{x}\""));
 
-        return $"{process.ProcessName} {args}";
+        return $"{startInfo.FileName} {args}";
     }
 }

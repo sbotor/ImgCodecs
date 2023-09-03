@@ -35,6 +35,7 @@ public sealed class FfmpegEncoder : ICodecEncoder
                 "-i", _parameters.SourcePath,
                 "-c:v", "libx265",
                 "-x265-params", "lossless=1",
+                "-profile:v", "main444-stillpicture",
                 "-frames:v", "1",
                 "-threads", _parameters.Threads.ToString(),
                 EncodedPath

@@ -132,6 +132,11 @@ public class BenchmarkRunner : IBenchmarkRunner
 
         var success = await _codecRunner.RunTimedAsync(encoder, cancellationToken);
 
+        if (!success)
+        {
+            _logger.LogWarning("Could not encode file {path}.", path);
+        }
+
         return success ? encoder.EncodedPath : null;
     }
 
@@ -140,6 +145,13 @@ public class BenchmarkRunner : IBenchmarkRunner
     {
         using var decoder = _codec.CreateDecoder(originalPath, encodedPath);
 
-        return await _codecRunner.RunTimedAsync(decoder, cancellationToken);
+        var success = await _codecRunner.RunTimedAsync(decoder, cancellationToken);
+
+        if (!success)
+        {
+            _logger.LogWarning("Could not decode file {path}.", encodedPath);
+        }
+        
+        return success;
     }
 }
