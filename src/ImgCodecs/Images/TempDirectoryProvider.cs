@@ -8,18 +8,21 @@ public interface ITempDirectoryProvider
 {
     string SupplyPathForEncoded(string originalFilePath, string targetExtension);
     string SupplyPathForDecoded(string originalFilePath);
+    string SupplyPathForDecoded(string originalFilePath, string targetExtension);
 }
 
 public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
 {
-    private readonly ILogger<TempDirectoryProvider> _logger;
     private const string EncodedPrefix = "ENC_";
     private const string DecodedPrefix = "DEC_";
+    private const int CountThreshold = 20;
     
-    private bool _disposed;
-
     private readonly List<string> _tempPaths = new();
     private readonly DirectorySettings _settings;
+    private readonly ILogger<TempDirectoryProvider> _logger;
+    private readonly Func<string, bool> _cleanupPredicate;
+    
+    private bool _disposed;
     
     public TempDirectoryProvider(
         IOptions<DirectorySettings> options,
@@ -27,6 +30,7 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
     {
         _logger = logger;
         _settings = options.Value;
+        _cleanupPredicate = GetCleanupPredicate();
     }
 
     public string SupplyPathForEncoded(string originalFilePath, string targetExtension)
@@ -45,8 +49,21 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
         return Attach($"{DecodedPrefix}{filename}");
     }
 
+    public string SupplyPathForDecoded(string originalFilePath, string targetExtension)
+    {
+        ThrowIfDisposed();
+
+        var filename = Path.GetFileName(originalFilePath);
+        return Attach($"{DecodedPrefix}{filename}{targetExtension}");
+    }
+
     private string Attach(string filename)
     {
+        if (_tempPaths.Count == CountThreshold)
+        {
+            CleanFiles();
+        }
+        
         Directory.CreateDirectory(_settings.TempDirectoryPath);
         
         var path = Path.Join(_settings.TempDirectoryPath, filename);
@@ -69,28 +86,19 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
         {
             return;
         }
-
-        Func<string, bool> predicate = _settings.TempCleanupBehavior switch
-        {
-            TempCleanupBehavior.DeleteAll => _ => true,
-            TempCleanupBehavior.PreserveAll => _ => false,
-            TempCleanupBehavior.PreserveDecoded => x => !x.StartsWith(DecodedPrefix),
-            TempCleanupBehavior.PreserveEncoded => x => !x.StartsWith(EncodedPrefix),
-            _ => throw new ArgumentOutOfRangeException()
-        };
-
-        CleanFiles(predicate);
+        
+        CleanFiles();
         
         _disposed = true;
     }
 
-    private void CleanFiles(Func<string, bool> predicate)
+    private void CleanFiles()
     {
         foreach (var path in _tempPaths)
         {
             try
             {
-                if (predicate(path))
+                if (_cleanupPredicate(path))
                 {
                     File.Delete(path);
                 }
@@ -102,5 +110,17 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
                     path);
             }
         }
+        
+        _tempPaths.Clear();
     }
+    
+    private Func<string, bool> GetCleanupPredicate()
+        => _settings.TempCleanupBehavior switch
+        {
+            TempCleanupBehavior.DeleteAll => _ => true,
+            TempCleanupBehavior.PreserveAll => _ => false,
+            TempCleanupBehavior.PreserveDecoded => x => !x.StartsWith(DecodedPrefix),
+            TempCleanupBehavior.PreserveEncoded => x => !x.StartsWith(EncodedPrefix),
+            _ => throw new InvalidOperationException("Invalid temp cleanup behavior.")
+        };
 }

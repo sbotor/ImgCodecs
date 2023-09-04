@@ -16,5 +16,6 @@ public enum BenchmarkType
     JpegXl,
     Flif,
     Hevc,
+    HevcLossless,
     Vvc
 }

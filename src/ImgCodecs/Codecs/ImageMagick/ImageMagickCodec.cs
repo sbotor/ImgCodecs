@@ -33,7 +33,7 @@ public class ImageMagickCodec : ICodec
         var tempDecodedFilePath =
             _tempDirectoryProvider.SupplyPathForDecoded(info.File.FullPath);
 
-        var parameters = new CodecParameters(info.File.FullPath, tempDecodedFilePath);
+        var parameters = new CodecParameters(encodedFilePath, tempDecodedFilePath);
 
         return new ImageMagickCoder(parameters, _processRunner);
     }

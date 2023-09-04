@@ -17,10 +17,6 @@ public sealed class FfmpegDecoder : ICodecCoder
         return await _processRunner.RunAsync(startInfo, cancellationToken) == 0;
     }
     
-    public void Dispose()
-    {
-    }
-    
     private IEnumerable<string> GetArguments()
         => new[]
         {

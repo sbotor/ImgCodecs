@@ -24,37 +24,54 @@ public class FfmpegCodec : ICodec
     }
 
     public ICodecEncoder CreateEncoder(ImageInfo info)
+        => _benchmarkType switch
+        {
+            BenchmarkType.Hevc => HevcEncoder(info, false),
+            BenchmarkType.HevcLossless => HevcEncoder(info, true),
+            BenchmarkType.Vvc => VvcEncoder(info),
+            _ => throw InvalidBenchmarkType()
+        };
+
+    private ICodecEncoder HevcEncoder(ImageInfo info, bool lossless)
     {
         var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(
             info.File.FullPath,
             FfmpegHelpers.TargetExtension);
+        
+        var parameters = new HevcParameters(
+            info.File.FullPath,
+            tempEncodedFilePath,
+            _threads)
+        {
+            Lossless = lossless
+        };
+        
+        return new HevcEncoder(parameters, _processRunner);
+    }
 
+    private ICodecEncoder VvcEncoder(ImageInfo info)
+    {
+        var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(
+            info.File.FullPath,
+            FfmpegHelpers.VvcExtension);
+        
         var parameters = new FfmpegCodecParameters(
             info.File.FullPath,
             tempEncodedFilePath,
             _threads);
-
-        switch (_benchmarkType)
-        {
-            case BenchmarkType.Hevc:
-                return new HevcEncoder(new(
-                        info.File.FullPath,
-                        tempEncodedFilePath,
-                        _threads),
-                    _processRunner);
-            case BenchmarkType.Vvc:
-                return new VvcEncoder(new(
-                        info.File.FullPath,
-                        tempEncodedFilePath,
-                        _threads,
-                        info.Entry.Dimensions),
-                    _processRunner, _tempDirectoryProvider);
-            default:
-                throw InvalidBenchmarkType();
-        }
+        
+        return new VvcEncoder(parameters, _processRunner);
     }
 
     public ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath)
+        => _benchmarkType switch
+        {
+            BenchmarkType.Hevc => HevcDecoder(info, encodedFilePath),
+            BenchmarkType.Vvc => VvcDecoder(info, encodedFilePath),
+            _ => throw InvalidBenchmarkType()
+        };
+
+    private ICodecCoder HevcDecoder(ImageInfo info, string encodedFilePath)
     {
         var tempDecodedFilePath = _tempDirectoryProvider.SupplyPathForDecoded(info.File.FullPath);
 
@@ -62,7 +79,20 @@ public class FfmpegCodec : ICodec
             encodedFilePath,
             tempDecodedFilePath,
             _threads);
+        
+        return new FfmpegDecoder(parameters, _processRunner);
+    }
 
+    private ICodecCoder VvcDecoder(ImageInfo info, string encodedFilePath)
+    {
+        var tempDecodedFilePath = _tempDirectoryProvider.SupplyPathForDecoded(info.File.FullPath);
+
+        var parameters = new VvcParameters(
+            encodedFilePath,
+            tempDecodedFilePath,
+            _threads,
+            info.Entry.Dimensions);
+        
         return new FfmpegDecoder(parameters, _processRunner);
     }
 

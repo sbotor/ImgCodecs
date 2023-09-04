@@ -127,7 +127,7 @@ public class BenchmarkRunner : IBenchmarkRunner
 
     private async Task<string?> MeasureEncoding(ImageInfo info, CancellationToken cancellationToken)
     {
-        using var encoder = _codec.CreateEncoder(info);
+        var encoder = _codec.CreateEncoder(info);
 
         var success = await _codecRunner.RunTimedAsync(encoder, cancellationToken);
 
@@ -142,7 +142,7 @@ public class BenchmarkRunner : IBenchmarkRunner
     private async Task<bool> MeasureDecoding(ImageInfo info, string encodedPath,
         CancellationToken cancellationToken)
     {
-        using var decoder = _codec.CreateDecoder(info, encodedPath);
+        var decoder = _codec.CreateDecoder(info, encodedPath);
 
         var success = await _codecRunner.RunTimedAsync(decoder, cancellationToken);
 

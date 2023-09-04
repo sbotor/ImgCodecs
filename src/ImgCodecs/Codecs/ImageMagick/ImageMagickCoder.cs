@@ -22,8 +22,4 @@ public sealed class ImageMagickCoder : ICodecEncoder
         });
         return await _processRunner.RunAsync(startInfo, cancellationToken) == 0;
     }
-
-    public void Dispose()
-    {
-    }
 }

@@ -4,7 +4,7 @@ import sys
 
 PROJ_PATH = 'src/ImgCodecs/ImgCodecs.csproj'
 
-BENCH_TYPES = ('JpegLs', 'Jpeg2000', 'JpegXl', 'Flif', 'Hevc', 'Vvc')
+BENCH_TYPES = ('JpegLs', 'Jpeg2000', 'JpegXl', 'Flif', 'Hevc', 'HevcLossless', 'Vvc')
 RUN_COUNT = 10
 WARMUP_COUNT = 5
 BATCH_SIZE = 50

@@ -2,7 +2,7 @@
 
 namespace ImgCodecs.Codecs;
 
-public interface ICodecCoder : IDisposable
+public interface ICodecCoder
 {
     Task<bool> RunAsync(CancellationToken cancellationToken);
 }
