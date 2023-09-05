@@ -15,7 +15,6 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
 {
     private const string EncodedPrefix = "ENC_";
     private const string DecodedPrefix = "DEC_";
-    private const int CountThreshold = 20;
     
     private readonly List<string> _tempPaths = new();
     private readonly DirectorySettings _settings;
@@ -58,12 +57,7 @@ public sealed class TempDirectoryProvider : ITempDirectoryProvider, IDisposable
     }
 
     private string Attach(string filename)
-    {
-        if (_tempPaths.Count == CountThreshold)
-        {
-            CleanFiles();
-        }
-        
+    {        
         Directory.CreateDirectory(_settings.TempDirectoryPath);
         
         var path = Path.Join(_settings.TempDirectoryPath, filename);

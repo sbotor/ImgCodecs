@@ -54,7 +54,7 @@ public class FfmpegCodec : ICodec
     {
         var tempEncodedFilePath = _tempDirectoryProvider.SupplyPathForEncoded(
             info.File.FullPath,
-            FfmpegHelpers.VvcExtension);
+            FfmpegHelpers.TargetExtension);
         
         var parameters = new FfmpegCodecParameters(
             info.File.FullPath,
