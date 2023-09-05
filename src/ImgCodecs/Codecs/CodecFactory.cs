@@ -1,4 +1,5 @@
 ﻿using ImgCodecs.Codecs.Ffmpeg;
+using ImgCodecs.Codecs.Flif;
 using ImgCodecs.Codecs.ImageMagick;
 using ImgCodecs.Codecs.JpegLs;
 using ImgCodecs.Codecs.Jxl;
@@ -30,7 +31,7 @@ public class CodecFactory : ICodecFactory
 
         switch (benchmarkType)
         {
-            case BenchmarkType.Flif or BenchmarkType.Jpeg2000:
+            case BenchmarkType.Jpeg2000:
                 return new ImageMagickCodec(
                     benchmarkType,
                     tempDirProvider,
@@ -40,6 +41,8 @@ public class CodecFactory : ICodecFactory
                 return new JpegLsCodec(dirOptions, processRunner, tempDirProvider);
             case BenchmarkType.JpegXl:
                 return new JxlCodec(tempDirProvider, processRunner);
+            case BenchmarkType.Flif:
+                return new FlifCodec(tempDirProvider, processRunner);
             case BenchmarkType.Hevc or BenchmarkType.Vvc:
                 return new FfmpegCodec(
                     benchmarkType,
