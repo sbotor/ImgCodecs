@@ -1,7 +1,6 @@
 from PIL import Image
-import pillow_jpls
+import pillow_jpls as _
 import sys
-
 
 def main():
     inp = sys.argv[1]

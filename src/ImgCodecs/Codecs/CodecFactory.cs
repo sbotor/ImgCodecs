@@ -43,7 +43,9 @@ public class CodecFactory : ICodecFactory
                 return new JxlCodec(tempDirProvider, processRunner);
             case BenchmarkType.Flif:
                 return new FlifCodec(tempDirProvider, processRunner);
-            case BenchmarkType.Hevc or BenchmarkType.Vvc:
+            case BenchmarkType.Hevc
+                or BenchmarkType.HevcLossless
+                or BenchmarkType.Vvc:
                 return new FfmpegCodec(
                     benchmarkType,
                     threads,

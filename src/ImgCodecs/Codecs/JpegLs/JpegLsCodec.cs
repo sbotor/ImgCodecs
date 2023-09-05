@@ -38,11 +38,11 @@ public class JpegLsCodec : ICodec
 
     public ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath)
     {
-        var tempEncodedFilePath = _tempDirProvider.SupplyPathForDecoded(info.File.FullPath);
+        var tempDecodedFilePath = _tempDirProvider.SupplyPathForDecoded(info.File.FullPath);
         
         var parameters = new JpegLsParameters(
-            info.File.FullPath,
-            tempEncodedFilePath,
+            encodedFilePath,
+            tempDecodedFilePath,
             _settings.ScriptsDirectoryPath)
         {
             Decode = true

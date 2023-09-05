@@ -28,9 +28,9 @@ public class FlifCodec : ICodec
 
     public ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath)
     {
-        var tempEncodedFilePath = _tempDirProvider.SupplyPathForDecoded(info.File.FullPath);
+        var tempDecodedFilePath = _tempDirProvider.SupplyPathForDecoded(info.File.FullPath);
         
-        var parameters = new FlifParameters(info.File.FullPath, tempEncodedFilePath)
+        var parameters = new FlifParameters(encodedFilePath, tempDecodedFilePath)
         {
             Decode = true
         };

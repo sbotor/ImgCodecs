@@ -67,7 +67,9 @@ public class FfmpegCodec : ICodec
     public ICodecCoder CreateDecoder(ImageInfo info, string encodedFilePath)
         => _benchmarkType switch
         {
-            BenchmarkType.Hevc => HevcDecoder(info, encodedFilePath),
+            BenchmarkType.Hevc
+                or BenchmarkType.HevcLossless
+                => HevcDecoder(info, encodedFilePath),
             BenchmarkType.Vvc => VvcDecoder(info, encodedFilePath),
             _ => throw InvalidBenchmarkType()
         };
