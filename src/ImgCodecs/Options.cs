@@ -42,6 +42,9 @@ public class BenchmarkingOptions
 
     [Option('t', "threads", HelpText = "Thread count. Defaults to max virtual threads for the current processor.")]
     public int Threads { get; set; }
+    
+    [Option('s', "scripts", HelpText = "Path to the scripts folder. Default: '{root}/scripts'.")]
+    public string? ScriptsPath { get; set; }
 
     public string GetEffectiveListPath()
         => GetEffectivePath(ListPath, "images.csv");
@@ -54,6 +57,9 @@ public class BenchmarkingOptions
     
     public string GetEffectiveResultsPath()
         => GetEffectivePath(ResultsPath, "results.csv");
+    
+    public string GetEffectiveScriptsDirPath()
+        => GetEffectivePath(ScriptsPath, "scripts");
     
     private string GetEffectivePath(string? value, string defaultValue)
     {

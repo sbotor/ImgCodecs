@@ -14,7 +14,7 @@ IMG_DIR_PATH = 'images'
 TEMP_DIR_PATH = 'temp'
 RESULTS_PATH = 'results.csv'
 ROOT_PATH = '.'
-TEMP_CLEANUP = 'DeleteAll'
+TEMP_CLEANUP = 'PreserveAll'
 THREADS = '0'
 
 _BENCH_TYPES_LOWERCASE = tuple((x.lower() for x in BENCH_TYPES))

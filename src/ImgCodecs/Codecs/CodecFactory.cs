@@ -1,7 +1,10 @@
 ﻿using ImgCodecs.Codecs.Ffmpeg;
 using ImgCodecs.Codecs.ImageMagick;
+using ImgCodecs.Codecs.JpegLs;
+using ImgCodecs.Codecs.Jxl;
 using ImgCodecs.Configuration;
 using ImgCodecs.Images;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace ImgCodecs.Codecs;
@@ -13,37 +16,38 @@ public interface ICodecFactory
 
 public class CodecFactory : ICodecFactory
 {
-    private readonly ITempDirectoryProvider _tempDirectoryProvider;
-    private readonly IProcessRunner _processRunner;
+    private readonly IServiceProvider _serviceProvider;
 
-    public CodecFactory(
-        ITempDirectoryProvider tempDirectoryProvider,
-        IProcessRunner processRunner)
+    public CodecFactory(IServiceProvider serviceProvider)
     {
-        _tempDirectoryProvider = tempDirectoryProvider;
-        _processRunner = processRunner;
+        _serviceProvider = serviceProvider;
     }
 
     public ICodec CreateCodec(BenchmarkType benchmarkType, int threads)
-        => benchmarkType switch
-        {
-            BenchmarkType.Flif
-                or BenchmarkType.Jpeg2000
-                or BenchmarkType.JpegLs
-                or BenchmarkType.JpegXl
-                => new ImageMagickCodec(
-                    benchmarkType,
-                    _tempDirectoryProvider,
-                    _processRunner),
+    {
+        var tempDirProvider = _serviceProvider.GetRequiredService<ITempDirectoryProvider>();
+        var processRunner = _serviceProvider.GetRequiredService<IProcessRunner>();
 
-            BenchmarkType.Hevc
-                or BenchmarkType.Vvc
-                => new FfmpegCodec(
+        switch (benchmarkType)
+        {
+            case BenchmarkType.Flif or BenchmarkType.Jpeg2000:
+                return new ImageMagickCodec(
+                    benchmarkType,
+                    tempDirProvider,
+                    processRunner);
+            case BenchmarkType.JpegLs:
+                var dirOptions = _serviceProvider.GetRequiredService<IOptions<DirectorySettings>>();
+                return new JpegLsCodec(dirOptions, processRunner, tempDirProvider);
+            case BenchmarkType.JpegXl:
+                return new JxlCodec(tempDirProvider, processRunner);
+            case BenchmarkType.Hevc or BenchmarkType.Vvc:
+                return new FfmpegCodec(
                     benchmarkType,
                     threads,
-                    _tempDirectoryProvider,
-                    _processRunner),
-
-            _ => throw new InvalidOperationException("Invalid benchmark type.")
-        };
+                    tempDirProvider,
+                    processRunner);
+            default:
+                throw new InvalidOperationException("Invalid benchmark type.");
+        }
+    }
 }

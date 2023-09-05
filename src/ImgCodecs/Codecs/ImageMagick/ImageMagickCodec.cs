@@ -14,7 +14,7 @@ public class ImageMagickCodec : ICodec
         ITempDirectoryProvider tempDirectoryProvider,
         IProcessRunner processRunner)
     {
-        _targetExtension = ImageMagickHelpers.GetExtension(benchmarkType);
+        _targetExtension = ImageMagickHelpers.GetExtensionAndProcFilename(benchmarkType);
         _tempDirectoryProvider = tempDirectoryProvider;
         _processRunner = processRunner;
     }

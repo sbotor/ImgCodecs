@@ -15,11 +15,12 @@ public sealed class ImageMagickCoder : ICodecEncoder
 
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
     {
-        var startInfo = ProcessHelpers.CreateStartInfo(ImageMagickHelpers.Filename, new[]
+        var startInfo = ProcessHelpers.CreateStartInfo(ImageMagickHelpers.MagickFilename, new[]
         {
             _parameters.SourcePath,
             _parameters.DestinationPath
         });
+        
         return await _processRunner.RunAsync(startInfo, cancellationToken) == 0;
     }
 }

@@ -63,6 +63,7 @@ public static class Setup
             x.ImagesDirectoryPath = options.GetEffectiveImageDirPath();
             x.TempDirectoryPath = options.GetEffectiveTempDirPath();
             x.ResultsPath = options.GetEffectiveResultsPath();
+            x.ScriptsDirectoryPath = options.GetEffectiveScriptsDirPath();
             x.TempCleanupBehavior = options.TempCleanupBehavior;
         });
         

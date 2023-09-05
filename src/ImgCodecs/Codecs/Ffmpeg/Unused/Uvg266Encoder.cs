@@ -1,6 +1,6 @@
 using ImgCodecs.Images;
 
-namespace ImgCodecs.Codecs.Ffmpeg;
+namespace ImgCodecs.Codecs.Ffmpeg.Unused;
 
 public class VvcParameters : FfmpegCodecParameters
 {
