@@ -5,16 +5,16 @@ import sys
 PROJ_PATH = 'src/ImgCodecs/ImgCodecs.csproj'
 
 BENCH_TYPES = ('JpegLs', 'Jpeg2000', 'JpegXl', 'Flif', 'Hevc', 'HevcLossless', 'Vvc')
-RUN_COUNT = 10
-WARMUP_COUNT = 5
-BATCH_SIZE = 50
-TIMEOUT = 30_000
+RUN_COUNT = 1
+WARMUP_COUNT = 0
+BATCH_SIZE = 5
+TIMEOUT = 180_000
 LIST_PATH = 'images.csv'
 IMG_DIR_PATH = 'images'
 TEMP_DIR_PATH = 'temp'
 RESULTS_PATH = 'results.csv'
 ROOT_PATH = '.'
-TEMP_CLEANUP = 'PreserveAll'
+TEMP_CLEANUP = 'DeleteAll'
 THREADS = '0'
 
 _BENCH_TYPES_LOWERCASE = tuple((x.lower() for x in BENCH_TYPES))
