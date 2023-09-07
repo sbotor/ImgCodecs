@@ -16,7 +16,7 @@ def convert_img(path: Path):
 
     width = img.width if img.width % 2 == 0 else img.width - 1
     height = img.height if img.height % 2 == 0 else img.height - 1
-    box = (0, 0, height, width)
+    box = (0, 0, width, height)
 
     converted = img.crop(box)
 
